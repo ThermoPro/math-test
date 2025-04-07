@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Quiz for Kids</title>
+    <!-- Added Monospace font to ensure proper alignment -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: Comic Sans MS, sans-serif; text-align: center; background-color: #ffeb3b; }
+        .container { width: 50%; margin: auto; padding: 20px; background: white; border-radius: 15px; box-shadow: 5px 5px 15px rgba(0,0,0,0.2); }
+        .hidden { display: none; }
+        .question { margin: 20px 0; font-size: 18px; }
+        .vertical-problem { display: inline-block; text-align: right; font-family: 'Roboto Mono', monospace; font-size: 22px; margin: 10px; }
+        .horizontal-problem { display: inline-block; font-family: 'Roboto Mono', monospace; font-size: 22px; margin: 10px; }
+        .operation-symbol { display: inline-block; width: 20px; text-align: center; }
+        .answer-input { width: 80px; text-align: right; padding: 5px; font-family: monospace; font-size: 20px; }
+        .underline { border-bottom: 2px solid #000; margin-bottom: 5px; }
+        button { background: #ff5722; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #e64a19; }
+        select, input { padding: 8px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="setup">
+            <h2>🎉 Welcome to the Fun Math Quiz! 🎉</h2>
+            <label>Number of Questions:</label>
+            <select id="numQuestions">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+            </select><br>
+            
+            <label>Highest Number to Test:</label>
+            <input type="number" id="maxNumber" min="1" max="1000" value="10"><br>
+            
+            <label>Math Operations:</label>
+            <div id="operationOptions">
+                <input type="checkbox" id="add" value="+"> Addition
+                <input type="checkbox" id="sub" value="-"> Subtraction
+                <input type="checkbox" id="mul" value="*"> Multiplication
+                <input type="checkbox" id="div" value="/"> Division
+            </div><br>
+            
+            <label>Problem Layout:</label>
+            <select id="problemLayout">
+                <option value="vertical">Vertical (Stacked)</option>
+                <option value="horizontal">Horizontal (Left to Right)</option>
+            </select><br>
+            
+            <button onclick="startQuiz()">🚀 Start Quiz</button>
+        </div>
+
+        <div id="quiz" class="hidden">
+            <h2>⏳ Math Quiz in Progress! ⏳</h2>
+            <p id="timer">Time: 0s</p>
+            <div id="questions"></div>
+            <button onclick="submitQuiz()">✅ Submit Answers</button>
+        </div>
+
+        <div id="results" class="hidden">
+            <h2>🎯 Quiz Results 🎯</h2>
+            <p id="score"></p>
+            <p id="timeTaken"></p>
+            <div id="review"></div>
+            <button onclick="location.reload()">🔄 Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        let quizData = [], startTime, endTime;
+
+        function startQuiz() {
+            let numQuestions = parseInt(document.getElementById('numQuestions').value);
+            let maxNumber = parseInt(document.getElementById('maxNumber').value);
+            let selectedOps = getSelectedOperations();
+            let layout = document.getElementById('problemLayout').value;
+            
+            if (selectedOps.length === 0) {
+                alert("Please select at least one operation!");
+                return;
+            }
+            
+            quizData = generateQuiz(numQuestions, maxNumber, selectedOps);
+            document.getElementById('setup').classList.add('hidden');
+            document.getElementById('quiz').classList.remove('hidden');
+            displayQuestions(layout);
+            startTimer();
+        }
+
+        function getSelectedOperations() {
+            let checkboxes = document.querySelectorAll('#operationOptions input:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function generateQuiz(num, maxNumber, operations) {
+            let questions = [];
+            
+            for (let i = 0; i < num; i++) {
+                let num1 = Math.floor(Math.random() * maxNumber) + 1;
+                let num2 = Math.floor(Math.random() * maxNumber) + 1;
+                let op = operations[Math.floor(Math.random() * operations.length)];
+                
+                // For subtraction, ensure num1 >= num2 to get positive answers
+                if (op === '-' && num1 < num2) {
+                    // Swap the numbers
+                    [num1, num2] = [num2, num1];
+                }
+                
+                let answer = eval(`${num1} ${op} ${num2}`);
+                answer = op === '/' ? parseFloat(answer.toFixed(2)) : answer;
+                questions.push({ num1, num2, op, answer, userAnswer: null });
+            }
+            return questions;
+        }
+
+        function displayQuestions(layout) {
+            let questionDiv = document.getElementById('questions');
+            questionDiv.innerHTML = '';
+            
+            quizData.forEach((q, index) => {
+                let problemHTML = '';
+                
+                if (layout === 'vertical') {
+                    // For vertical layout, align digits
+                    let num1Str = q.num1.toString();
+                    let num2Str = q.num2.toString();
+                    let maxLength = Math.max(num1Str.length, num2Str.length);
+                    
+                    // Pad the numbers with spaces for alignment
+                    num1Str = num1Str.padStart(maxLength, ' ');
+                    num2Str = num2Str.padStart(maxLength, ' ');
+                    
+                    // Create the vertical problem with monospace font for alignment
+                    problemHTML = `
+                        <div class="vertical-problem">
+                            <div>${num1Str}</div>
+                            <div>${q.op} ${num2Str}</div>
+                            <div class="underline"></div>
+                            <div><input type="text" class="answer-input" id="answer${index}"></div>
+                        </div>
+                    `;
+                } else {
+                    // Horizontal layout
+                    problemHTML = `
+                        <div class="horizontal-problem">
+                            ${q.num1} <span class="operation-symbol">${q.op}</span> ${q.num2} = <input type="text" class="answer-input" id="answer${index}">
+                        </div>
+                    `;
+                }
+                
+                questionDiv.innerHTML += `<div class="question">🎲 ${problemHTML}</div>`;
+            });
+        }
+
+        function startTimer() {
+            startTime = Date.now();
+            setInterval(() => {
+                let timeElapsed = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('timer').innerText = `⏳ Time: ${timeElapsed}s`;
+            }, 1000);
+        }
+
+        function submitQuiz() {
+            endTime = Date.now();
+            let timeTaken = Math.floor((endTime - startTime) / 1000);
+            document.getElementById('timeTaken').innerText = `🕒 Time Taken: ${timeTaken} seconds`;
+            
+            quizData.forEach((q, index) => {
+                q.userAnswer = document.getElementById(`answer${index}`).value;
+            });
+            showResults();
+        }
+
+        function showResults() {
+            let correct = 0, incorrect = 0;
+            let reviewDiv = document.getElementById('review');
+            reviewDiv.innerHTML = '';
+            let layout = document.getElementById('problemLayout').value;
+            
+            quizData.forEach(q => {
+                // Handle empty answers
+                let userAnswerValue = q.userAnswer ? parseFloat(q.userAnswer) : null;
+                let isCorrect = userAnswerValue === parseFloat(q.answer);
+                
+                if (isCorrect) {
+                    correct++;
+                } else {
+                    incorrect++;
+                    
+                    // Show incorrect answers in the review
+                    if (layout === 'vertical') {
+                        let num1Str = q.num1.toString();
+                        let num2Str = q.num2.toString();
+                        let maxLength = Math.max(num1Str.length, num2Str.length);
+                        
+                        num1Str = num1Str.padStart(maxLength, ' ');
+                        num2Str = num2Str.padStart(maxLength, ' ');
+                        
+                        reviewDiv.innerHTML += `
+                            <div style="margin: 15px; display: inline-block;">
+                                <div style="font-family: monospace; text-align: right; font-size: 18px;">
+                                    <div>${num1Str}</div>
+                                    <div>${q.op} ${num2Str}</div>
+                                    <div style="border-bottom: 2px solid #000;"></div>
+                                    <div>Your answer: <b>${q.userAnswer || 'None'}</b></div>
+                                    <div>Correct: <b>${q.answer}</b></div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        reviewDiv.innerHTML += `<p>❌ ${q.num1} ${q.op} ${q.num2} = <b>${q.userAnswer || 'None'}</b> (Correct: ${q.answer})</p>`;
+                    }
+                }
+            });
+            
+            document.getElementById('score').innerText = `✅ Correct: ${correct} ❌ Incorrect: ${incorrect}`;
+            document.getElementById('quiz').classList.add('hidden');
+            document.getElementById('results').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
