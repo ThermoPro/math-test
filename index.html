@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Math Quiz for Kids</title>
-    <!-- Added Monospace font to ensure proper alignment -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
@@ -97,25 +96,32 @@
         }
 
         function generateQuiz(num, maxNumber, operations) {
-            let questions = [];
-            
-            for (let i = 0; i < num; i++) {
-                let num1 = Math.floor(Math.random() * maxNumber) + 1;
-                let num2 = Math.floor(Math.random() * maxNumber) + 1;
-                let op = operations[Math.floor(Math.random() * operations.length)];
-                
-                // For subtraction, ensure num1 >= num2 to get positive answers
-                if (op === '-' && num1 < num2) {
-                    // Swap the numbers
-                    [num1, num2] = [num2, num1];
-                }
-                
-                let answer = eval(`${num1} ${op} ${num2}`);
-                answer = op === '/' ? parseFloat(answer.toFixed(2)) : answer;
-                questions.push({ num1, num2, op, answer, userAnswer: null });
+    let questions = [];
+
+    for (let i = 0; i < num; i++) {
+        let num1, num2, op;
+        do {
+            op = operations[Math.floor(Math.random() * operations.length)];
+
+            if (op === '/') {
+                num2 = Math.floor(Math.random() * maxNumber) + 1;
+                num1 = num2 * Math.floor(Math.random() * Math.floor(maxNumber / num2) + 1);
+            } else {
+                num1 = Math.floor(Math.random() * maxNumber) + 1;
+                num2 = Math.floor(Math.random() * maxNumber) + 1;
+                if (op === '-' && num1 < num2) [num1, num2] = [num2, num1];
             }
-            return questions;
-        }
+        } while (
+            (op === '/' && (num2 === 0 || num1 % num2 !== 0)) || 
+            (num1 === num2)
+        );
+
+        let answer = eval(`${num1} ${op} ${num2}`);
+        questions.push({ num1, num2, op, answer, userAnswer: null });
+    }
+
+    return questions;
+}
 
         function displayQuestions(layout) {
             let questionDiv = document.getElementById('questions');
@@ -125,16 +131,12 @@
                 let problemHTML = '';
                 
                 if (layout === 'vertical') {
-                    // For vertical layout, align digits
                     let num1Str = q.num1.toString();
                     let num2Str = q.num2.toString();
                     let maxLength = Math.max(num1Str.length, num2Str.length);
-                    
-                    // Pad the numbers with spaces for alignment
                     num1Str = num1Str.padStart(maxLength, ' ');
                     num2Str = num2Str.padStart(maxLength, ' ');
                     
-                    // Create the vertical problem with monospace font for alignment
                     problemHTML = `
                         <div class="vertical-problem">
                             <div>${num1Str}</div>
@@ -144,7 +146,6 @@
                         </div>
                     `;
                 } else {
-                    // Horizontal layout
                     problemHTML = `
                         <div class="horizontal-problem">
                             ${q.num1} <span class="operation-symbol">${q.op}</span> ${q.num2} = <input type="text" class="answer-input" id="answer${index}">
@@ -182,7 +183,6 @@
             let layout = document.getElementById('problemLayout').value;
             
             quizData.forEach(q => {
-                // Handle empty answers
                 let userAnswerValue = q.userAnswer ? parseFloat(q.userAnswer) : null;
                 let isCorrect = userAnswerValue === parseFloat(q.answer);
                 
@@ -190,13 +190,10 @@
                     correct++;
                 } else {
                     incorrect++;
-                    
-                    // Show incorrect answers in the review
                     if (layout === 'vertical') {
                         let num1Str = q.num1.toString();
                         let num2Str = q.num2.toString();
                         let maxLength = Math.max(num1Str.length, num2Str.length);
-                        
                         num1Str = num1Str.padStart(maxLength, ' ');
                         num2Str = num2Str.padStart(maxLength, ' ');
                         
